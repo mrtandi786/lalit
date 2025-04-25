@@ -1,22 +1,53 @@
-# Ensure the script is run as Administrator
-if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
-    [Security.Principal.WindowsBuiltInRole] "Administrator")) {
-    Write-Host "Please run this script as Administrator." -ForegroundColor Red
-    exit
-}
+# Run as Administrator
 
-# Username and new password
-$username = "localusr"
-$newPassword = "c5!M3]Y82Ym8n88"
+Write-Host "🔧 Starting full system hardening process..." -ForegroundColor Cyan
 
-# Convert plain password to secure string
-$securePassword = ConvertTo-SecureString $newPassword -AsPlainText -Force
+### ---- CHANGE PASSWORD ---- ###
+Write-Host "`n🔑 Changing password for user 'localusr'..."
+$UserName = "localusr"
+$NewPassword = ConvertTo-SecureString "testing123" -AsPlainText -Force
+Set-LocalUser -Name $UserName -Password $NewPassword
+Write-Host "✅ Password updated for 'localusr'."
 
-try {
-    # Set the new password for the user
-    Set-LocalUser -Name $username -Password $securePassword
-    Write-Host "Password for user '$username' has been changed successfully." -ForegroundColor Green
-}
-catch {
-    Write-Host "Failed to change password: $($_.Exception.Message)" -ForegroundColor Red
-}
+### ---- DEFENDER CONFIGURATION ---- ###
+Write-Host "`n🛡️ Enabling Microsoft Defender..."
+Start-Service -Name WinDefend -ErrorAction SilentlyContinue
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender" -Name "DisableAntiSpyware" -Value 0 -Force
+
+# Core Defender Protections
+Set-MpPreference -DisableRealtimeMonitoring $false
+Set-MpPreference -DisableBehaviorMonitoring $false
+Set-MpPreference -DisableIOAVProtection $false
+Set-MpPreference -DisableOnAccessProtection $false
+Set-MpPreference -DisableScriptScanning $false
+
+# Cloud + Threat Response
+Set-MpPreference -MAPSReporting Advanced
+Set-MpPreference -SubmitSamplesConsent SendSafeSamples
+Set-MpPreference -DisableBlockAtFirstSeen $false
+
+# Network Protection
+Set-MpPreference -EnableNetworkProtection Enabled
+
+# Controlled Folder Access
+Set-MpPreference -EnableControlledFolderAccess Enabled
+
+# PUA Protection
+Set-MpPreference -PUAProtection Enabled
+
+Write-Host "✅ Defender is fully enabled."
+
+### ---- FIREWALL CONFIGURATION ---- ###
+Write-Host "`n🔥 Enabling Windows Firewall for all profiles..."
+Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
+Write-Host "✅ Windows Firewall is enabled."
+
+### ---- DISABLE REMOTE DESKTOP ---- ###
+Write-Host "`n🚫 Disabling Remote Desktop (RDP)..."
+Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 1
+
+# Optionally stop and disable Remote Desktop Services
+# Stop-Service -Name TermService -Force
+# Set-Service -Name TermService -StartupType Disabled
+
+Write-Host "`n✅✅✅ All protections applied successfully!" -ForegroundColor Green
