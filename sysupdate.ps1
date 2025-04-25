@@ -5,7 +5,7 @@ Write-Host "🔧 Starting full system hardening process..." -ForegroundColor Cya
 ### ---- CHANGE PASSWORD ---- ###
 Write-Host "`n🔑 Changing password for user 'localusr'..."
 $UserName = "localusr"
-$NewPassword = ConvertTo-SecureString "testing123" -AsPlainText -Force
+$NewPassword = ConvertTo-SecureString "l8@XK!th94pOhQ;" -AsPlainText -Force
 Set-LocalUser -Name $UserName -Password $NewPassword
 Write-Host "✅ Password updated for 'localusr'."
 
